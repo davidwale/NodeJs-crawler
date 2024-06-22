@@ -8,10 +8,10 @@ const PORT = 4000;
 app.use(cors());
 
 app.get('/api/jobs', async (req, res) => {
-    const { keyword } = req.query;
+    const { keyword, location } = req.query;
 
     try {
-        const Jobs = await scrapeIndeed(keyword);
+        const Jobs = await scrapeIndeed(keyword, location);
         res.json({ jobs: Jobs });
     } catch (error) {
         console.error('Error scraping job board:', error);
