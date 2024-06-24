@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { scrapeIndeed } = require('./crawler');
+const { scrapeAllPlatforms } = require('./crawler');
 
 const app = express();
 const PORT = 4000;
@@ -11,7 +11,7 @@ app.get('/api/jobs', async (req, res) => {
     const { keyword, location } = req.query;
 
     try {
-        const Jobs = await scrapeIndeed(keyword, location);
+        const Jobs = await scrapeAllPlatforms(keyword, location);
         res.json({ jobs: Jobs });
     } catch (error) {
         console.error('Error scraping job board:', error);
