@@ -1,35 +1,3 @@
-// async function scrapeIndeed(keyword, location) {
-
-//     const browser = await puppeteer.launch();
-//     const page = await browser.newPage()
-//     // const linkedinUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${keyword}&location=${location}`;
-//         const linkedinUrl = `https://www.jobberman.com/jobs/${location}?q=${keyword}`;
-//     try {
-//          await page.goto(linkedinUrl);
-
-    
-//     const jobs = await page.evaluate(() =>
-    //     Array.from(document.querySelectorAll('[data-cy=listing-cards-components]'), (e) => ({
-    //         title: e.querySelector('[data-cy=listing-title-link]').innerText,
-    //         companyName: e.querySelector('.text-loading-animate-link').innerText,
-    //         companyURL: e.querySelector('.text-loading-animate-link').href,
-    //         jobLocation: e.querySelector('.text-loading-hide').innerText,
-    //         jobDuration: e.querySelector('p .text-loading-animate').innerText,
-    //         jobURL: e.querySelector('[data-cy=listing-title-link]').href,
-    //    }))
-    //     );
-//     return jobs;
-//     } catch (error) {
-//         console.error(error)
-//         res.status(500).send('Error site');
-//     } finally {
-//         await browser.close();
-
-//     }
-
-// }
-
-
 const puppeteer = require('puppeteer');
 
 async function scrapeLinkedIn(keyword, location) {
@@ -38,6 +6,7 @@ async function scrapeLinkedIn(keyword, location) {
     const linkedinUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${keyword}&location=${location}`;
 
     try {
+        page.setDefaultNavigationTimeout(0);
         await page.goto(linkedinUrl);
         const jobs = await page.evaluate(() =>
             Array.from(document.querySelectorAll('li'), (e) => ({
@@ -64,6 +33,7 @@ async function scrapeJobberman(keyword, location) {
     const jobbermanUrl = `https://www.jobberman.com/jobs?q=${keyword}&l=${location}`;
 
     try {
+        page.setDefaultNavigationTimeout(0);
         await page.goto(jobbermanUrl);
         const jobs = await page.evaluate(() =>
             Array.from(document.querySelectorAll('[data-cy=listing-cards-components]'), (e) => ({
@@ -84,13 +54,44 @@ async function scrapeJobberman(keyword, location) {
     }
 }
 
+async function scrapeIndeed(keyword, location) {
+    const browser = await puppeteer.launch({
+        headless: false,
+        slowMo: 250, 
+    });
+    const page = await browser.newPage();
+    const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword}&l=${location}`;
+
+    try {
+         page.setDefaultNavigationTimeout(0);
+        await page.goto(IndeedUrl);
+        const jobs = await page.evaluate(() =>
+            Array.from(document.querySelectorAll('.job_seen_beacon'), (e) => ({
+                title: e.querySelector('.jobTitle')?.innerText || 'N/A',
+                companyName: e.querySelector('[data-testid=company-name]')?.innerText || 'N/A',
+                companyURL: e.querySelector('.base-search-card__subtitle a')?.href || 'N/A',
+                jobLocation: e.querySelector('[data-testid=text-location]')?.innerText || 'N/A',
+                jobDuration: e.querySelector('[data-testid=myJobsStateDate]')?.innerText || 'N/A',
+                jobURL: e.querySelector('a')?.href || 'N/A',
+            }))
+        );
+        return jobs;
+    } catch (error) {
+        console.error(error);
+        throw new Error('Error scraping Indeed');
+    } finally {
+        await browser.close();
+    }
+}
+
 async function scrapeAllPlatforms(keyword, location) {
     try {
-        const [linkedInJobs, jobbermanJobs] = await Promise.all([
+        const [linkedInJobs, indeedJobs, jobbermanJobs] = await Promise.all([
             scrapeLinkedIn(keyword, location),
+            scrapeIndeed(keyword, location),
             scrapeJobberman(keyword, location)
         ]);
-        return [...linkedInJobs, ...jobbermanJobs];
+        return [...linkedInJobs, ...indeedJobs, ...jobbermanJobs];
     } catch (error) {
         console.error(error);
         throw new Error('Error scraping all platforms');
@@ -100,5 +101,6 @@ async function scrapeAllPlatforms(keyword, location) {
 module.exports = {
     scrapeLinkedIn,
     scrapeJobberman,
+    scrapeIndeed,
     scrapeAllPlatforms,
 };
