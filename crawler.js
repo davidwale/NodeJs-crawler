@@ -58,6 +58,7 @@ async function scrapeIndeed(keyword, location) {
     
     const browser = await puppeteer.launch({
         headless: false,
+        executablePath: require('puppeteer').executablePath(),
         env: {
           DISPLAY: ':0',
         },
@@ -90,7 +91,7 @@ async function scrapeIndeed(keyword, location) {
         return jobs;
     } catch (error) {
         console.error(error);
-        throw new Error('Error scraping Indeed');
+        throw new Error('Error scraping Indeed' + error);
     } finally {
         await browser.close();
     }
