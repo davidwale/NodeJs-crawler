@@ -55,8 +55,12 @@ async function scrapeJobberman(keyword, location) {
 }
 
 async function scrapeIndeed(keyword, location) {
+    
     const browser = await puppeteer.launch({
         headless: false,
+        env: {
+          DISPLAY: ':0',
+        },
         slowMo: 250,
         args: [
       '--no-sandbox',
