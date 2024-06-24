@@ -57,7 +57,10 @@ async function scrapeJobberman(keyword, location) {
 async function scrapeIndeed(keyword, location) {
     const browser = await puppeteer.launch({
         headless: false,
-        slowMo: 250, 
+        slowMo: 250,
+        env: {
+        DISPLAY: ":10.0"
+    },
     });
     const page = await browser.newPage();
     const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword}&l=${location}`;
