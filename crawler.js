@@ -23,7 +23,7 @@ async function scrapeIndeed(page, keyword, location) {
             }
         });
 
-        await page.goto(IndeedUrl, { timeout: 0 });
+        await page.goto(IndeedUrl, { timeout: 30000 });
         const jobs = await page.evaluate(() =>
             Array.from(document.querySelectorAll('.job_seen_beacon'), (e) => ({
                 title: e.querySelector('.jobTitle')?.innerText || 'N/A',
@@ -91,7 +91,7 @@ async function scrapeJobberman(page, keyword, location) {
             }
         });
 
-        await page.goto(jobbermanUrl, { timeout: 0 });
+        await page.goto(jobbermanUrl, { timeout: 30000 });
         const jobs = await page.evaluate(() =>
             Array.from(document.querySelectorAll('[data-cy=listing-cards-components]'), (e) => ({
                 title: e.querySelector('[data-cy=listing-title-link]')?.innerText || 'N/A',
