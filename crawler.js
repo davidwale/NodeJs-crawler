@@ -2,10 +2,39 @@ const puppeteer = require('puppeteer');
 const puppeteerExtra = require('puppeteer-extra');
 const pluginStealth = require('puppeteer-extra-plugin-stealth');
 
-async function scrapeLinkedIn(keyword, location) {
-    const browser = await puppeteer.launch();
+
+async function scrapeIndeed(keyword, location) {
+    puppeteerExtra.use(pluginStealth());
+    const browser = await puppeteerExtra.launch();
     const page = await browser.newPage();
-    const linkedinUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${keyword}&location=${location}`;
+    const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword || 'developer'}&l=${location || 'lagos'}`;
+
+    try {
+         page.setDefaultNavigationTimeout(0);
+        await page.goto(IndeedUrl);
+        const jobs = await page.evaluate(() =>
+            Array.from(document.querySelectorAll('.job_seen_beacon'), (e) => ({
+                title: e.querySelector('.jobTitle')?.innerText || 'N/A',
+                companyName: e.querySelector('[data-testid=company-name]')?.innerText || 'N/A',
+                companyURL: e.querySelector('.base-search-card__subtitle a')?.href || 'N/A',
+                jobLocation: e.querySelector('[data-testid=text-location]')?.innerText || 'N/A',
+                jobDuration: e.querySelector('[data-testid=myJobsStateDate]')?.innerText || 'N/A',
+                jobURL: e.querySelector('a')?.href || 'N/A',
+            }))
+        );
+        return jobs;
+    } catch (error) {
+        console.error(error);
+        throw new Error('Error scraping Indeed' + error);
+    } finally {
+        await browser.close();
+    }
+}
+async function scrapeLinkedIn(keyword, location) {
+    puppeteerExtra.use(pluginStealth());
+    const browser = await puppeteerExtra.launch();
+    const page = await browser.newPage();
+    const linkedinUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${keyword || 'developer'}&location=${location || 'lagos'}`;
 
     try {
         page.setDefaultNavigationTimeout(0);
@@ -30,9 +59,10 @@ async function scrapeLinkedIn(keyword, location) {
 }
 
 async function scrapeJobberman(keyword, location) {
-    const browser = await puppeteer.launch();
+    puppeteerExtra.use(pluginStealth());
+    const browser = await puppeteerExtra.launch();
     const page = await browser.newPage();
-    const jobbermanUrl = `https://www.jobberman.com/jobs?q=${keyword}&l=${location}`;
+    const jobbermanUrl = `https://www.jobberman.com/jobs?q=${keyword || 'developer'}&l=${location || 'lagos'}`;
 
     try {
         page.setDefaultNavigationTimeout(0);
@@ -56,42 +86,14 @@ async function scrapeJobberman(keyword, location) {
     }
 }
 
-async function scrapeIndeed(keyword, location) {
-    puppeteerExtra.use(pluginStealth());
-    const browser = await puppeteerExtra.launch();
-    const page = await browser.newPage();
-    const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword}&l=${location}`;
-
-    try {
-         page.setDefaultNavigationTimeout(0);
-        await page.goto(IndeedUrl);
-        const jobs = await page.evaluate(() =>
-            Array.from(document.querySelectorAll('.job_seen_beacon'), (e) => ({
-                title: e.querySelector('.jobTitle')?.innerText || 'N/A',
-                companyName: e.querySelector('[data-testid=company-name]')?.innerText || 'N/A',
-                companyURL: e.querySelector('.base-search-card__subtitle a')?.href || 'N/A',
-                jobLocation: e.querySelector('[data-testid=text-location]')?.innerText || 'N/A',
-                jobDuration: e.querySelector('[data-testid=myJobsStateDate]')?.innerText || 'N/A',
-                jobURL: e.querySelector('a')?.href || 'N/A',
-            }))
-        );
-        return jobs;
-    } catch (error) {
-        console.error(error);
-        throw new Error('Error scraping Indeed' + error);
-    } finally {
-        await browser.close();
-    }
-}
-
 async function scrapeAllPlatforms(keyword, location) {
     try {
-        const [linkedInJobs, indeedJobs, jobbermanJobs] = await Promise.all([
-            scrapeLinkedIn(keyword, location),
+        const [indeedJobs, linkedInJobs, jobbermanJobs] = await Promise.all([
             scrapeIndeed(keyword, location),
+            scrapeLinkedIn(keyword, location),
             scrapeJobberman(keyword, location)
         ]);
-        return [...linkedInJobs, ...indeedJobs, ...jobbermanJobs];
+        return [...indeedJobs, ...linkedInJobs, ...jobbermanJobs];
     } catch (error) {
         console.error(error);
         throw new Error('Error scraping all platforms');
@@ -99,8 +101,8 @@ async function scrapeAllPlatforms(keyword, location) {
 }
 
 module.exports = {
+    scrapeIndeed,
     scrapeLinkedIn,
     scrapeJobberman,
-    scrapeIndeed,
     scrapeAllPlatforms,
 };
