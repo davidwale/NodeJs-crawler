@@ -1,4 +1,6 @@
 const puppeteer = require('puppeteer');
+const puppeteerExtra = require('puppeteer-extra');
+const pluginStealth = require('puppeteer-extra-plugin-stealth');
 
 async function scrapeLinkedIn(keyword, location) {
     const browser = await puppeteer.launch();
@@ -55,23 +57,8 @@ async function scrapeJobberman(keyword, location) {
 }
 
 async function scrapeIndeed(keyword, location) {
-    
-    const browser = await puppeteer.launch({
-        headless: false,
-        executablePath: require('puppeteer').executablePath(),
-        env: {
-          DISPLAY: ':0',
-        },
-        slowMo: 250,
-        args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--disable-gpu',
-      '--window-size=1920x1080',
-    ],
-    });
+    puppeteerExtra.use(pluginStealth());
+    const browser = await puppeteerExtra.launch();
     const page = await browser.newPage();
     const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword}&l=${location}`;
 
