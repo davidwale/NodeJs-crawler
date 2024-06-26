@@ -1,6 +1,6 @@
-const puppeteer = require('puppeteer');
 const puppeteerExtra = require('puppeteer-extra');
 const pluginStealth = require('puppeteer-extra-plugin-stealth');
+const Job = require('./model/job');
 
 puppeteerExtra.use(pluginStealth());
 
@@ -9,7 +9,7 @@ async function createBrowser() {
 }
 
 async function scrapeIndeed(page, keyword, location) {
-    const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword || 'developer'}&l=${location || 'lagos'}`;
+    const IndeedUrl = `https://ng.indeed.com/jobs?q=${keyword}&l=${location}`;
 
     try {
         await page.setViewport({ width: 1920, height: 1080 });
@@ -34,16 +34,24 @@ async function scrapeIndeed(page, keyword, location) {
                 jobURL: e.querySelector('a')?.href || 'N/A',
             }))
         );
+
+        // Save jobs to database
+        jobs.forEach(async (job) => {
+            job.keyword = keyword;
+            job.location = location;
+            await new Job(job).save();
+        });
+
         console.log("indeed");
         return jobs;
     } catch (error) {
-        console.error(error);
+        console.error("Error scraping Indeed:", error);
         return [];   
     }
 }
 
 async function scrapeLinkedIn(page, keyword, location) {
-    const linkedinUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${keyword || 'developer'}&location=${location || 'lagos'}`;
+    const linkedinUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${keyword}&location=${location}`;
 
     try {
         await page.setViewport({ width: 1920, height: 1080 });
@@ -68,16 +76,24 @@ async function scrapeLinkedIn(page, keyword, location) {
                 jobURL: e.querySelector('a.base-card__full-link')?.href || 'N/A',
             }))
         );
-        console.log("linkedIn");
+
+        // Save jobs to database
+        jobs.forEach(async (job) => {
+            job.keyword = keyword;
+            job.location = location;
+            await new Job(job).save();
+        });
+
+        console.log("LinkedIn");
         return jobs;
     } catch (error) {
-        console.error(error);
+        console.error("Error scraping LinkedIn:", error);
         return []; 
     }
 }
 
 async function scrapeJobberman(page, keyword, location) {
-    const jobbermanUrl = `https://www.jobberman.com/jobs?q=${keyword || 'developer'}&l=${location || 'lagos'}`;
+    const jobbermanUrl = `https://www.jobberman.com/jobs?q=${keyword}&l=${location}`;
 
     try {
         await page.setViewport({ width: 1920, height: 1080 });
@@ -102,46 +118,38 @@ async function scrapeJobberman(page, keyword, location) {
                 jobURL: e.querySelector('[data-cy=listing-title-link]')?.href || 'N/A',
             }))
         );
-        console.log("jobberman");
+
+        // Save jobs to database
+        jobs.forEach(async (job) => {
+            job.keyword = keyword;
+            job.location = location;
+            await new Job(job).save();
+        });
+
+        console.log("Jobberman");
         return jobs;
     } catch (error) {
-        console.error(error);
+        console.error("Error scraping Jobberman:", error);
         return [];  
     }
 }
 
-function timeoutPromise(ms) {
-    return new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), ms)
-    );
-}
-
 async function scrapeAllPlatforms(keyword, location) {
-    const browser = await createBrowser();
-    const timeout = 32000;  
+    const browser = await createBrowser();  
     try {
         const pageIndeed = await browser.newPage();
         const pageLinkedIn = await browser.newPage();
         const pageJobberman = await browser.newPage();
 
         const [indeedJobs, linkedInJobs, jobbermanJobs] = await Promise.all([
-            Promise.race([scrapeIndeed(pageIndeed, keyword, location), timeoutPromise(timeout)]).catch(error => {
-                console.error("Indeed timeout");
-                return [];
-            }),
-            Promise.race([scrapeLinkedIn(pageLinkedIn, keyword, location), timeoutPromise(timeout)]).catch(error => {
-                console.error("LinkedIn Timeout");
-                return [];
-            }),
-            Promise.race([scrapeJobberman(pageJobberman, keyword, location), timeoutPromise(timeout)]).catch(error => {
-                console.error("Jobberman timeout");
-                return [];
-            })
+            scrapeIndeed(pageIndeed, keyword, location),
+            scrapeLinkedIn(pageLinkedIn, keyword, location),
+            scrapeJobberman(pageJobberman, keyword, location)
         ]);
 
         return [...indeedJobs, ...linkedInJobs, ...jobbermanJobs];
     } catch (error) {
-        console.error(error);
+        console.error('Error scraping all platforms:', error);
         throw new Error('Error scraping all platforms: ' + error.message);
     } finally {
         await browser.close();
