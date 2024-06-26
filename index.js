@@ -19,11 +19,12 @@ mongoose.connect(process.env.MONGODB_URI)
         console.error('Error connecting to MongoDB:', e.message);
     });
 
-const keywords = ['developer', 'engineer', 'software developer', 'data scientist']; 
-const locations = ['lagos', 'abuja', 'port harcourt', 'nigeria']; 
+const keywords = ['developer', 'engineer', 'software', 'frontend', 'fullstack', 'backend', 'data', 'scientist', 'designer']; 
+const locations = ['nigeria']; 
 
-cron.schedule('0 */1 * * *', async () => {
-    console.log('Cron job started');
+// Cron Function for scraping jobs daily
+cron.schedule('0 0 * * *', async () => {
+    console.log('Daily scraping cron job started');
     for (const keyword of keywords) {
         for (const location of locations) {
             try {
@@ -34,7 +35,22 @@ cron.schedule('0 */1 * * *', async () => {
             }
         }
     }
-    console.log('Cron job completed');
+    console.log('Daily scraping cron job completed');
+});
+
+// Cron function for deleting jobs older than a week from DB
+cron.schedule('0 0 * * *', async () => {
+    console.log('Daily deletion cron job started');
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    try {
+        const result = await Job.deleteMany({ scrapedAt: { $lt: oneWeekAgo } });
+        console.log(`Deleted ${result.deletedCount} jobs older than a week.`);
+    } catch (error) {
+        console.error('Error deleting old jobs:', error);
+    }
+    console.log('Daily deletion cron job completed');
 });
 
 app.get('/api/jobs', async (req, res) => {
@@ -72,7 +88,6 @@ app.get('/api/jobs', async (req, res) => {
         res.status(500).send('Error fetching job listings');
     }
 });
-
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
