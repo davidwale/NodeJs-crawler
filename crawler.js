@@ -41,8 +41,8 @@ async function scrapeIndeed(page, keyword, location) {
             job.location = location;
             await new Job(job).save();
         });
-
-        console.log("indeed");
+        const NumberOfJobs = jobs.length;
+        console.log(`${NumberOfJobs} ${keyword} jobs scraped from indeed`);
         return jobs;
     } catch (error) {
         console.error("Error scraping Indeed:", error);
@@ -84,7 +84,8 @@ async function scrapeLinkedIn(page, keyword, location) {
             await new Job(job).save();
         });
 
-        console.log("LinkedIn");
+        const NumberOfJobs = jobs.length;
+        console.log(`${NumberOfJobs} ${keyword} jobs scraped from LinkedIn`);
         return jobs;
     } catch (error) {
         console.error("Error scraping LinkedIn:", error);
@@ -126,7 +127,8 @@ async function scrapeJobberman(page, keyword, location) {
             await new Job(job).save();
         });
 
-        console.log("Jobberman");
+        const NumberOfJobs = jobs.length;
+        console.log(`${NumberOfJobs} ${keyword} jobs scraped from Jobberman`);
         return jobs;
     } catch (error) {
         console.error("Error scraping Jobberman:", error);

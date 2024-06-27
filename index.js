@@ -39,8 +39,8 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 // Cron function for deleting jobs older than a week from DB
-cron.schedule('0 0 * * *', async () => {
-    console.log('Daily deletion cron job started');
+cron.schedule('0 0 * * 0', async () => {
+    console.log('Weekly deletion cron job started');
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -50,7 +50,7 @@ cron.schedule('0 0 * * *', async () => {
     } catch (error) {
         console.error('Error deleting old jobs:', error);
     }
-    console.log('Daily deletion cron job completed');
+    console.log('Weekly deletion cron job completed');
 });
 
 app.get('/api/jobs', async (req, res) => {
